@@ -54,7 +54,7 @@ from stereo.modeling.models.cfnet.cfnet import CFNet
 from stereo.modeling.models.casnet.cas_gwc import GwcNet as CasGwcNet
 from stereo.modeling.models.casnet.cas_psm import PSMNet as CasPSMNet
 from stereo.modeling.models.lightstereo.lightstereo import LightStereo as LightStereo
-
+from stereo.modeling.models.nmrf.NMRF import NMRF as NMRF
 
 __net__ = {
     'STTR': STTR,
@@ -69,7 +69,8 @@ __net__ = {
     'CFNet': CFNet,
     'CasGwcNet': CasGwcNet,
     'CasPSMNet': CasPSMNet,
-    'LightStereo': LightStereo
+    'LightStereo': LightStereo,
+    'NMRF': NMRF
 }
 
 # logger
@@ -127,6 +128,7 @@ def export_torchscript(model, inputs, file, optimize, prefix=colorstr('TorchScri
 
 @try_export
 def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorstr('ONNX:')):
+       
     # ONNX export
     check_requirements('onnx', logger)
     import onnx
@@ -154,7 +156,7 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
         input_names=input_names,
         output_names=output_names,
         dynamic_axes=dynamic or None)
-
+    
     # Checks
     model_onnx = onnx.load(f)  # load onnx model
     onnx.checker.check_model(model_onnx)  # check onnx model
@@ -356,7 +358,7 @@ def run(
     # dry runs & check
     try:
         output = output_model(inputs)
-        if not isinstance(output, (list, tuple, torch.Tensor)):
+        if not isinstance(output, (list, tuple, torch.Tensor, dict)):
             raise TypeError(f"Expected a sequence type, but received {type(output)}")
         logger.info("Model output is a valid sequence type.")
     except TypeError as e:
@@ -365,7 +367,7 @@ def run(
     # Exports
     f = [''] * len(fmts)  # exported filenames
     warnings.filterwarnings(action='ignore', category=torch.jit.TracerWarning)  # suppress TracerWarning
-    
+
     fmts_df = export_formats()[1:]
     if jit:  # TorchScript
         f[get_format_idx(fmts_df, 'torchscript')], _ = export_torchscript(output_model, inputs, weights, optimize)

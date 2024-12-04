@@ -1,3 +1,10 @@
 .idea
 **__pycache__**
 **.DS_Store**
+
+build/
+**.egg-info/
+dist/
+
+checkpoints/
+demos/

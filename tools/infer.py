@@ -20,6 +20,7 @@ def parse_config():
     # data
     parser.add_argument('--left_img_path', type=str, default=None)
     parser.add_argument('--right_img_path', type=str, default=None)
+    parser.add_argument('--savename', type=str, default=None)
 
     args = parser.parse_args()
     yaml_config = common_utils.config_loader(args.cfg_file)
@@ -76,7 +77,7 @@ def main():
     with torch.cuda.amp.autocast(enabled=cfgs.OPTIMIZATION.AMP):
         model_pred = model(sample)
 
-    disp_pred = model_pred['disp_pred'].squeeze().cpu().numpy()
+    disp_pred = model_pred['disp_pred'].squeeze().detach().cpu().numpy()
     img_color = disp_to_color(disp_pred, max_disp=192)
     img_color = img_color.astype('uint8')
     img_color = Image.fromarray(img_color)
