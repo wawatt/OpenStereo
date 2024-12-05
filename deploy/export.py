@@ -148,7 +148,7 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
     
     torch.onnx.export(
         model,
-        {'data': inputs},
+        {'sample': inputs},
         f,
         verbose=False,
         opset_version=opset,
