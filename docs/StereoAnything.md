@@ -8,7 +8,7 @@
 <sup>5</sup>Rock Universe&emsp;&emsp;&emsp;&emsp; <sup>6</sup> Institute of Automation, Chinese Academy of Sciences&emsp;&emsp;&emsp;&emsp; <sup>7</sup>University of California, Berkeley&emsp;&emsp;&emsp;&emsp;
 
 
-<a href="https://arxiv.org/pdf/2411.14053"><img src='https://img.shields.io/badge/arXiv-Stereo Anything-red' alt='Paper PDF'></a> <a href='https://github.com/XiandaGuo/OpenStereo'><img src='https://img.shields.io/badge/Code-Stereo Anything-green' alt='Project Page'></a>
+<a href="https://arxiv.org/pdf/2411.14053"><img src='https://img.shields.io/badge/arXiv-Stereo Anything-red' alt='Paper PDF'></a> <a href='https://github.com/XiandaGuo/OpenStereo'><img src='https://img.shields.io/badge/Code-Stereo Anything-green' alt='Project Page'></a> &nbsp;
 
 </div>
 
@@ -49,7 +49,7 @@ We provide the models for robust stereo disparity estimation:
 
 You can easily load our pre-trained models by:
 ```python
-python tools/infer.py --cfg_file cfgs/nmrf/nmrf_swint_sceneflow.py \
+python tools/infer.py --cfg_file cfgs/nmrf/nmrf_swint_sceneflow.yaml \
 --pretrained_model Your_model_path \
 --left_img_path your/path \
 --right_img_path your/path \
