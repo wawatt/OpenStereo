@@ -11,7 +11,8 @@ https://gitcode.com/open-source-toolkit/9fbf3/overview
 
 ## run infer
 ```powershell
-python tools/infer.py --cfg_file cfgs/nmrf/xx_nmrf_swint_sceneflow.yaml `
+python tools/infer.py --cfg_file cfgs/nmrf/nmrf_swint_sceneflow.yaml `
+--pretrained_model checkpoints/stereoanything.pt `
 --left_img_path demos/L.png `
 --right_img_path demos/R.png `
 --savename demos/res.png
@@ -20,7 +21,7 @@ python tools/infer.py --cfg_file cfgs/nmrf/xx_nmrf_swint_sceneflow.yaml `
 ## export
 ```
 python deploy/export.py `
---config cfgs/nmrf/xx_nmrf_swint_sceneflow.yaml `
+--config cfgs/nmrf/nmrf_swint_sceneflow.yaml `
 --weights checkpoints/stereoanything.pt `
 --device 0 `
 --simplify --half --include onnx

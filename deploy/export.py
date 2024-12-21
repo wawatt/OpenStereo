@@ -118,8 +118,8 @@ def export_torchscript(model, inputs, file, optimize, prefix=colorstr('TorchScri
 
     ts = torch.jit.trace(model, inputs, strict=False)
     if optimize:  # https://pytorch.org/tutorials/recipes/mobile_interpreter.html
-        inputs['ref_img'].cpu()
-        inputs['tgt_img'].cpu()
+        inputs['left'].cpu()
+        inputs['right'].cpu()
         model.cpu()
         optimize_for_mobile(ts)._save_for_lite_interpreter(str(f))
     else:
@@ -150,12 +150,14 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
         model,
         {'sample': inputs},
         f,
-        verbose=False,
+        verbose=True,
         opset_version=opset,
         do_constant_folding=True,
         input_names=input_names,
         output_names=output_names,
-        dynamic_axes=dynamic or None)
+        dynamic_axes=dynamic or None,
+        operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK
+        )
     
     # Checks
     model_onnx = onnx.load(f)  # load onnx model
