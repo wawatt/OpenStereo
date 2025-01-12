@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from stereo.modeling.common.basic_block_2d import BasicConv2d, BasicDeconv2d
-from stereo.modeling.cost_volume.cost_volume import correlation_volume
+from stereo.modeling.cost_volume.cost_volume import correlation_volume, Build_gwc_volume_unfold
 from stereo.modeling.disp_pred.disp_regression import disparity_regression
 from stereo.modeling.disp_refinement.disp_refinement import context_upsample
 
@@ -15,6 +15,7 @@ class LightStereo(nn.Module):
         self.max_disp = cfgs.MAX_DISP
         self.left_att = cfgs.LEFT_ATT
 
+        self.bcvu = Build_gwc_volume_unfold(self.max_disp // 4)
         # backbobe
         self.backbone = Backbone(cfgs.get('BACKCONE', 'MobileNetv2'))
 
@@ -48,12 +49,18 @@ class LightStereo(nn.Module):
         features_left = self.backbone(image1)
         features_right = self.backbone(image2)
 
-        gwc_volume = correlation_volume(features_left[0], features_right[0], self.max_disp // 4)
+        # gwc_volume = correlation_volume(features_left[0], features_right[0], self.max_disp // 4)
+        gwc_volume = self.bcvu(features_left[0], features_right[0])
         encoding_volume = self.cost_agg(gwc_volume, features_left)  # [bz, 1, max_disp/4, H/4, W/4]
-        squeezed_encoding = encoding_volume[0].reshape(encoding_volume[0].size(0), -1, encoding_volume[0].size(2), encoding_volume[0].size(3))  # [bz, max_disp/4, H/4, W/4]
+        b, _, h, w = map(int, encoding_volume[0].size())
+        squeezed_encoding = encoding_volume[0].reshape(
+            b, 
+            int(self.max_disp // 4), 
+            h, 
+            w)  # [bz, max_disp/4, H/4, W/4]
 
         prob = F.softmax(squeezed_encoding, dim=1)
-        init_disp = disparity_regression(prob, self.max_disp // 4)  # [bz, 1, H/4, W/4]
+        init_disp = disparity_regression(prob, int(self.max_disp // 4))  # [bz, 1, H/4, W/4]
 
         xspx = self.refine_1(features_left[0])
         xspx = self.refine_2(xspx, self.stem_2(image1))

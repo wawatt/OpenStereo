@@ -11,11 +11,12 @@ class CoExCostVolume(nn.Module):
         super(CoExCostVolume, self).__init__()
         self.maxdisp = maxdisp + 1
         self.group = group
-        self.unfold = nn.Unfold((1, maxdisp + 1), 1, 0, 1)
-        self.left_pad = nn.ZeroPad2d((maxdisp, 0, 0, 0))
+        self.unfold = nn.Unfold(kernel_size=(1, maxdisp + 1), dilation=1, padding=0, stride=1)
+        self.left_pad = nn.ZeroPad2d((maxdisp, 0, 0, 0)) # 左填充
 
     def forward(self, x, y):
-        b, c, h, w = x.shape
+        b, c, h, w = x.shape  # [1, 24, 96, 160]
+        y = self.left_pad(y)  # [1, 24, 96, 352]
 
         y = self.left_pad(y)
         unfolded_y = self.unfold(y)
@@ -28,18 +29,53 @@ class CoExCostVolume(nn.Module):
 
         return cost
 
+class Build_gwc_volume_unfold(nn.Module):
+    def __init__(self, maxdisp):
+        self.maxdisp = maxdisp
+        super(Build_gwc_volume_unfold, self).__init__()
+        self.unfold = nn.Unfold((1, maxdisp), 1, 0, 1)
+        self.left_pad = nn.ZeroPad2d((maxdisp-1, 0, 0, 0))
+
+
+    def forward(self, refimg_fea, targetimg_fea, num_groups=1):
+        B, C, H, W = refimg_fea.shape
+        
+        unfolded_targetimg_fea = self.unfold(self.left_pad(targetimg_fea)).reshape(
+            B, num_groups, C//num_groups, self.maxdisp, H, W)
+        refimg_fea = refimg_fea.view(B, num_groups, C//num_groups, 1, H, W)
+        volume = (refimg_fea*unfolded_targetimg_fea).mean(2)
+        volume = torch.flip(volume, [2])
+        B1, _,C1, H1, W1 = volume.shape
+        return volume.view(B1, C1, H1, W1)
+    
+    
 
 def correlation_volume(left_feature, right_feature, max_disp):
-    b, c, h, w = left_feature.size()
-    cost_volume = left_feature.new_zeros(b, max_disp, h, w)
+    # b, c, h, w = left_feature.size()
+    # cost_volume = left_feature.new_zeros(b, max_disp, h, w)
+    # for i in range(max_disp):
+    #     if i > 0:
+    #         cost_volume[:, i, :, i:] = (left_feature[:, :, :, i:] * right_feature[:, :, :, :-i]).mean(dim=1)
+    #     else:
+    #         cost_volume[:, i, :, :] = (left_feature * right_feature).mean(dim=1)
+    # cost_volume = cost_volume.contiguous()
+    # print("---------------",cost_volume.shape) # torch.Size([1, 48, 96, 160])
+    # return cost_volume
+    # https://github.com/sophgo/sophon-demo/blob/30b60586845cc1a40dc519c913a857a9b52fd447/sample/LightStereo/tools/core/cost_volume.py#L32
+    b, _, h, w = map(int, left_feature.size())
+    left_feature = left_feature.permute(0, 1, 3, 2)
+    right_feature = right_feature.permute(0, 1, 3, 2)
+    cost_volume_list = []
     for i in range(max_disp):
-        if i > 0:
-            cost_volume[:, i, :, i:] = (left_feature[:, :, :, i:] * right_feature[:, :, :, :-i]).mean(dim=1)
-        else:
-            cost_volume[:, i, :, :] = (left_feature * right_feature).mean(dim=1)
-    cost_volume = cost_volume.contiguous()
-    return cost_volume
-
+      if i > 0:
+        cost_volume = (left_feature[:, :, i:, :] * right_feature[:, :, :-i, :]).mean(dim=1, keepdim=True)
+        zeros = torch.zeros(b, 1, i, h,device=left_feature.device)
+        cost_volume_list.append(torch.concat([zeros, cost_volume], 2))
+      else:
+        cost_volume = (left_feature * right_feature).mean(dim=1, keepdim=True)
+        cost_volume_list.append(cost_volume)
+    return torch.concat(cost_volume_list, 1).permute(0, 1, 3, 2).contiguous()
+    # https://github.com/oliver-batchelor/stereo_attention/blob/ad203e2863b1c1bc17082d95c14f024856c7b565/attention.py#L6
 
 def compute_volume(reference_embedding, target_embedding, maxdisp, side='left'):
     batch, channel, height, width = reference_embedding.size()

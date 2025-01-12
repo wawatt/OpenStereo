@@ -33,6 +33,14 @@ cv2.setNumThreads(0)  # prevent OpenCV from multithreading (incompatible with Py
 os.environ['NUMEXPR_MAX_THREADS'] = str(NUM_THREADS)  # NumExpr max threads
 os.environ['OMP_NUM_THREADS'] = '1' if platform.system() == 'darwin' else str(NUM_THREADS)  # OpenMP (PyTorch and SciPy)
 
+def make_divisible(value, divisor, min_value=None):
+    if min_value is None:
+        min_value = divisor
+    new_value = max(min_value, int(value + divisor / 2) // divisor * divisor)
+    if new_value < 0.9 * value:
+        new_value += divisor
+    return new_value
+
 def check_img_size(imgsz, s=32, floor=0, logger=None):
     if logger is None:
         logger = logging.getLogger(__name__)

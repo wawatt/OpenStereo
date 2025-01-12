@@ -54,8 +54,8 @@ from stereo.modeling.models.cfnet.cfnet import CFNet
 from stereo.modeling.models.casnet.cas_gwc import GwcNet as CasGwcNet
 from stereo.modeling.models.casnet.cas_psm import PSMNet as CasPSMNet
 from stereo.modeling.models.lightstereo.lightstereo import LightStereo as LightStereo
-from stereo.modeling.models.nmrf.NMRF import NMRF as NMRF
-
+# from stereo.modeling.models.nmrf.NMRF import NMRF as NMRF
+from stereo.modeling.models.stereobase.stereobase_gru import StereoBase
 __net__ = {
     'STTR': STTR,
     'PSMNet': PSMNet,
@@ -70,7 +70,8 @@ __net__ = {
     'CasGwcNet': CasGwcNet,
     'CasPSMNet': CasPSMNet,
     'LightStereo': LightStereo,
-    'NMRF': NMRF
+    # 'NMRF': NMRF
+    'StereoBaseGRU': StereoBase
 }
 
 # logger
@@ -148,7 +149,7 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
     
     torch.onnx.export(
         model,
-        {'sample': inputs},
+        {'data': inputs},
         f,
         verbose=True,
         opset_version=opset,
@@ -156,7 +157,7 @@ def export_onnx(model, inputs, weights, opset, dynamic, simplify, prefix=colorst
         input_names=input_names,
         output_names=output_names,
         dynamic_axes=dynamic or None,
-        operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK
+        # operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK
         )
     
     # Checks
@@ -407,7 +408,7 @@ def parse_opt():
     parser.add_argument('--int8', action='store_true', help='CoreML INT8 quantization')
     parser.add_argument('--dynamic', action='store_true', help='ONNX/TensorRT: dynamic axes')
     parser.add_argument('--simplify', action='store_true', help='ONNX: simplify model')
-    parser.add_argument('--opset', type=int, default=12, help='ONNX: opset version')
+    parser.add_argument('--opset', type=int, default=13, help='ONNX: opset version')
     parser.add_argument('--verbose', action='store_true', help='TensorRT: verbose log'),
     parser.add_argument('--workspace', type=int, default=4, help='TensorRT: workspace size (GB)')
     parser.add_argument(
